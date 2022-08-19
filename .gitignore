@@ -1,0 +1,7 @@
+clock-in.log
+#basic_info.py
+basic_info_sample.py
+__pycache__/*
+
+.idea
+.vscode
