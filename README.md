@@ -12,7 +12,7 @@ Following [idlesilver/ZJU_auto_health_report: 浙江大学健康打卡](https://
 2. 打开 `basic_info.py` 填写相应配置
 3. windows运行 `打卡.bat`
 
-> 注意：这里的 `EMAIL_PASSWD` 不是邮箱密码，而是授权码。[什么是授权码，它又是如何设置？_QQ邮箱帮助中心](https://service.mail.qq.com/cgi-bin/help?subtype=1&&no=1001256&&id=28)
+> 注意：这里的 `EMAIL_PASSWD` 不是邮箱密码，而是授权码AUTHCODE。[什么是授权码，它又是如何设置？_QQ邮箱帮助中心](https://service.mail.qq.com/cgi-bin/help?subtype=1&&no=1001256&&id=28)
 
 ## 自动周期
 ### windows
@@ -32,4 +32,6 @@ crontab -e
 0 8 * * * ${path_to_python_interpreter} ${path_to_project_dir}/ZJU_auto_health_report/clock-in.py >/dev/null 2>&1
 ```
 
+## 其他资源
 
+校友提供的自动打卡网站：https://tool.zjucjh.com:666/dk/

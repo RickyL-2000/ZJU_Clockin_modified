@@ -1,17 +1,17 @@
-# 打卡脚修改自ZJU-nCov-Hitcarder的开源代码，感谢这位同学开源的代码
-
 import datetime
 import json
 import logging
 import re
 import time
 import os
+import sys
 
 import requests
 import yagmail
 # import ddddocr
+import yaml
 
-from basic_info import email_server, users
+from basic_info import email_server, users, oldInfo_template
 
 
 class DaKa(object):
@@ -26,13 +26,12 @@ class DaKa(object):
         sess: (requests.Session) 统一的session
     """
 
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
+    def __init__(self, user):
+        self.user = user
         self.login_url = "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fhealthreport.zju.edu.cn%2Fa_zju%2Fapi%2Fsso%2Findex%3Fredirect%3Dhttps%253A%252F%252Fhealthreport.zju.edu.cn%252Fncov%252Fwap%252Fdefault%252Findex"
         self.base_url = "https://healthreport.zju.edu.cn/ncov/wap/default/index"
         self.save_url = "https://healthreport.zju.edu.cn/ncov/wap/default/save"
-        self.verify_code_url = "https://healthreport.zju.edu.cn/ncov/wap/default/code"
+        # self.verify_code_url = "https://healthreport.zju.edu.cn/ncov/wap/default/code"
         self.sess = requests.Session()
 
     def login(self):
@@ -43,10 +42,10 @@ class DaKa(object):
         res = self.sess.get(
             url='https://zjuam.zju.edu.cn/cas/v2/getPubKey').json()
         n, e = res['modulus'], res['exponent']
-        encrypt_password = self._rsa_encrypt(self.password, e, n)
+        encrypt_password = self._rsa_encrypt(self.user["ZJU_PASSWD"], e, n)
 
         data = {
-            'username': self.username,
+            'username': self.user["ZJU_NUMBER"],
             'password': encrypt_password,
             'execution': execution,
             '_eventId': 'submit'
@@ -79,13 +78,14 @@ class DaKa(object):
             if len(old_infos) != 0:
                 old_info = json.loads(old_infos[0])
             else:
-                raise RegexMatchError("未发现缓存信息，请先至少手动成功打卡一次再运行脚本")
+                old_info = oldInfo_template
+                # raise RegexMatchError("未发现缓存信息，请先至少手动成功打卡一次再运行脚本")
 
             new_info_tmp = json.loads(re.findall(r'def = ({[^\n]+})', html)[0])
             new_id = new_info_tmp['id']
             # NOTE: 2022-03-12 原始数据不再返回realname字段，这里暂时注释，使用配置文件强制修改，静观其变
             # name = re.findall(r'realname: "([^\"]+)",', html)[0]
-            number = re.findall(r"number: '([^\']+)',", html)[0]
+            # number = re.findall(r"number: '([^\']+)',", html)[0]
         except IndexError:
             raise RegexMatchError('Relative info not found in html with regex')
         except json.decoder.JSONDecodeError:
@@ -94,12 +94,12 @@ class DaKa(object):
         new_info = old_info.copy()
         new_info['id'] = new_id
         # NOTE: 2022-03-12 原始数据不再返回realname字段，这里暂时注释，使用配置文件强制修改，静观其变
-        new_info['name'] = "" #name
-        new_info['number'] = number
+        new_info['name'] = self.user["SPECIFIED_INFO"]["name"]  # name
+        new_info['number'] = self.user["ZJU_NUMBER"]    # number
         new_info["date"] = self.get_date()
         new_info["created"] = round(time.time())
-        new_info["address"] = "浙江省嘉兴市海宁市"
-        new_info["area"] = "浙江省 嘉兴市 海宁市"
+        new_info["address"] = self.user["SPECIFIED_INFO"]["address"]
+        new_info["area"] = self.user["SPECIFIED_INFO"]["area"]
         new_info["province"] = new_info["area"].split(' ')[0]
         new_info["city"] = new_info["area"].split(' ')[1]
         # form change
@@ -114,25 +114,25 @@ class DaKa(object):
         self.info = new_info
         return new_info
 
-    def set_info(self,info_dict):
+    def set_info(self, info_dict):
         for key in info_dict:
-            self.info[key]=info_dict[key]
+            self.info[key] = info_dict[key]
 
-    def verifiy_code(self):
-        r = self.sess.get(self.verify_code_url)
-        # with open('code.png','wb')as f:
-        #     f.write(r.content)
-            # print("下载验证码成功！")
-        ocr = ddddocr.DdddOcr()
-        #with open(r'C:\Users\Administrator\Desktop\验证码识别\code.png', 'rb') as f:
-            #img_bytes = f.read()
-        img_bytes=r.content
-
-        res = ocr.classification(img_bytes)
-
-        self.info["verifyCode"] = res
-        
-        return res
+    # def verifiy_code(self):
+    #     r = self.sess.get(self.verify_code_url)
+    #     # with open('code.png','wb')as f:
+    #     #     f.write(r.content)
+    #         # print("下载验证码成功！")
+    #     ocr = ddddocr.DdddOcr()
+    #     #with open(r'C:\Users\Administrator\Desktop\验证码识别\code.png', 'rb') as f:
+    #         #img_bytes = f.read()
+    #     img_bytes = r.content
+    #
+    #     res = ocr.classification(img_bytes)
+    #
+    #     self.info["verifyCode"] = res
+    #
+    #     return res
 
     def _rsa_encrypt(self, password_str, e_str, M_str):
         password_bytes = bytes(password_str, 'ascii')
@@ -181,7 +181,7 @@ class Log:
     def __init__(self, email_bot: EmailBot):
         logging.basicConfig(
             level=logging.INFO,
-            filename=os.path.join(os.path.dirname(os.path.realpath(__file__)),"clock-in.log"),
+            filename=os.path.join(os.path.dirname(os.path.realpath(__file__)), "clock-in.log"),
             format="%(message)s")
         self.email_bot = email_bot
         self.start_up()
@@ -211,10 +211,9 @@ class Log:
 
 
 def main(email_server, user):
-    email_bot = EmailBot(user["TO_EMAIL"], email_server["FROM_EMAIL"],
-                         email_server["EMAIL_PASSWD"], email_server["HOST"])
+    email_bot = EmailBot(user["TO_EMAIL"], email_server["FROM_EMAIL"], email_server["AUTHCODE"], email_server["HOST"])
     log = Log(email_bot)
-    dk = DaKa(user["ZJU_USERNAME"], user["ZJU_PASSWD"])
+    dk = DaKa(user)
 
     log.info("打卡任务启动")
 
@@ -229,7 +228,7 @@ def main(email_server, user):
     log.info('正在获取个人信息...')
     try:
         dk.get_info()
-        dk.verifiy_code()
+        # dk.verifiy_code()
         dk.set_info(user["SPECIFIED_INFO"])
         log.info(f"{dk.info['number']} {dk.info['name']}同学, 你好~")
     except Exception as err:
@@ -251,6 +250,4 @@ def main(email_server, user):
 
 if __name__ == "__main__":
     for name in users:
-        main(email_server,users[name])
-
-    # main(email_server,users["chz"])
+        main(email_server, users[name])

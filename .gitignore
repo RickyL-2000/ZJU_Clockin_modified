@@ -1,6 +1,9 @@
 clock-in.log
-#basic_info.py
+basic_info.py
 basic_info_sample.py
+temp.py
+temp.html
+config.yaml
 __pycache__/*
 
 .idea
