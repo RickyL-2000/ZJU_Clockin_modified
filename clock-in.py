@@ -11,8 +11,7 @@ import yagmail
 # import ddddocr
 import yaml
 
-from basic_info import email_server, users, oldInfo_template
-
+from basic_info import EMAIL_SERVER, USERS, OLDINFO
 
 class DaKa(object):
     """Hit card class
@@ -78,7 +77,7 @@ class DaKa(object):
             if len(old_infos) != 0:
                 old_info = json.loads(old_infos[0])
             else:
-                old_info = oldInfo_template
+                old_info = OLDINFO
                 # raise RegexMatchError("未发现缓存信息，请先至少手动成功打卡一次再运行脚本")
 
             new_info_tmp = json.loads(re.findall(r'def = ({[^\n]+})', html)[0])
@@ -235,6 +234,9 @@ def main(email_server, user):
         log.error('获取信息失败，请手动打卡，更多信息: ' + str(err))
         return
 
+    # log.info("测试完毕")
+    # sys.exit()
+
     try:
         res = dk.post()
         if str(res['e']) == '0':
@@ -249,5 +251,5 @@ def main(email_server, user):
 
 
 if __name__ == "__main__":
-    for name in users:
-        main(email_server, users[name])
+    for name in USERS:
+        main(EMAIL_SERVER, USERS[name])
