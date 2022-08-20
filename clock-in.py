@@ -38,6 +38,7 @@ class DaKa(object):
         res = self.sess.get(self.login_url)
         execution = re.search(
             'name="execution" value="(.*?)"', res.text).group(1)
+        # 动态密钥加密
         res = self.sess.get(
             url='https://zjuam.zju.edu.cn/cas/v2/getPubKey').json()
         n, e = res['modulus'], res['exponent']
@@ -177,9 +178,9 @@ class EmailBot:
         self.yag.send(self.to_user, subject, contents)
 
 class Log:
-    def __init__(self, email_bot: EmailBot):
+    def __init__(self, email_bot: EmailBot, level=logging.INFO):
         logging.basicConfig(
-            level=logging.INFO,
+            level=level,
             filename=os.path.join(os.path.dirname(os.path.realpath(__file__)), "clock-in.log"),
             format="%(message)s")
         self.email_bot = email_bot
@@ -191,6 +192,10 @@ class Log:
         self.log_cache = [now]
         logging.info("\n")
         logging.info(now)
+
+    def debug(self, contents):
+        logging.debug(contents)
+        self.log_cache.append(contents)
 
     def info(self, contents):
         logging.info(contents)
@@ -211,7 +216,8 @@ class Log:
 
 def main(email_server, user):
     email_bot = EmailBot(user["TO_EMAIL"], email_server["FROM_EMAIL"], email_server["AUTHCODE"], email_server["HOST"])
-    log = Log(email_bot)
+    log = Log(email_bot, level=logging.INFO)    # 要进行输出测试，即将level换成logging.DEBUG
+    log.debug("----------开始测试环节----------")
     dk = DaKa(user)
 
     log.info("打卡任务启动")
@@ -234,7 +240,7 @@ def main(email_server, user):
         log.error('获取信息失败，请手动打卡，更多信息: ' + str(err))
         return
 
-    # log.info("测试完毕")
+    log.debug("一阶段测试完毕")
     # sys.exit()
 
     try:
@@ -248,6 +254,8 @@ def main(email_server, user):
         return
 
     log.end_with_success()
+
+    log.debug("二阶段测试完毕")
 
 
 if __name__ == "__main__":
