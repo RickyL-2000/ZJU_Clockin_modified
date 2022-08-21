@@ -195,7 +195,7 @@ class Log:
 
     def debug(self, contents):
         logging.debug(contents)
-        self.log_cache.append(contents)
+        # no email sending debug msg
 
     def info(self, contents):
         logging.info(contents)
