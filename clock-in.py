@@ -232,7 +232,7 @@ def main(email_server, user):
 
     log.info('正在获取个人信息...')
     try:
-        dk.get_info()
+        new_info = dk.get_info()
         # dk.verifiy_code()
         dk.set_info(user["SPECIFIED_INFO"])
         log.info(f"{dk.info['number']} {dk.info['name']}同学, 你好~")
@@ -249,6 +249,12 @@ def main(email_server, user):
             log.info('已为您打卡成功！')
         else:
             log.warning(res['m'])
+        # 展示post详细信息
+        log.info(f"-------------------------\n"
+                 f"detailed info:\n"
+                 f"地址: {new_info['address']} | {new_info['area']}\n"
+                 f"是否申请杭州健康卡: {'是' if new_info['sfsqhzjkk'] else '否'}\n"
+                 f"杭州健康码颜色: {'绿色' if new_info['sqhzjkkys'] == 1 else '红色' if new_info['sqhzjkkys'] == 2 else '黄色'}\n")
     except Exception:
         log.error('数据提交失败')
         return
