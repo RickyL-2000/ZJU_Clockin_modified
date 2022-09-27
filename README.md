@@ -1,6 +1,6 @@
 # Automatic Clockin for ZJU
 
-Following [idlesilver/ZJU_auto_health_report](https://github.com/idlesilver/ZJU_auto_health_report)。
+Following [idlesilver/ZJU_auto_health_report](https://github.com/idlesilver/ZJU_auto_health_report)。浙江大学健康打卡。
 
 ## 基础配置
 1. 安装 yagmail 第三方库 用于邮件通知
